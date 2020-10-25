@@ -5,6 +5,7 @@
 # 问题5.怎么生成（0,1）的随机数 fix：生成两个随机数加和除二，总不能这么倒霉两个都等于0吧
 
 import numpy as np
+import copy
 import random
 from environment import environment
 from collections import defaultdict
@@ -17,6 +18,7 @@ class QLearningAgent:
         self.learning_rate = (random.uniform(0, 1)+random.uniform(0, 1))/2
         self.discount_factor = (random.uniform(0, 1)+random.uniform(0, 1))/2
         self.epsilon = 0.1
+        self.deep_learning_factor = 0.8
         self.q_table = defaultdict(lambda: [0.0, 0.0, 0.0, 0.0])
     
     def get_max_index(self, arr):
@@ -29,6 +31,7 @@ class QLearningAgent:
         # row和col是从0开始的，但是在append到path上面就都加了一
         while(row!=5 or col!=5):
             action = agent.get_max_index(agent.q_table[str([row, col])])
+            agent.q_table[str([row, col])] = [0,0,0,0]
             if action == 0:
                 row = row - 1
             elif action == 1:
@@ -47,11 +50,23 @@ class QLearningAgent:
         
 
     # 采样 <s, a, r, s'>
-    def learn(self, state, action, reward, next_state):
+    def learn(self, state, action, reward, next_state, n_next_state):
         current_q = self.q_table[state][action]
         # 贝尔曼方程更新
-        new_q = reward + self.discount_factor * max(self.q_table[next_state])
+        # new_q = reward + self.discount_factor * max(self.q_table[next_state])
+        # self.q_table[state][action] += self.learning_rate * (new_q - current_q)
+        # 改进新方法
+        n_n_score = -100
+        for index, n_n in enumerate(n_next_state):
+            tmp = copy.copy(self.q_table[str(n_n)])
+            tmp.append(n_n_score)
+            n_n_score = max(tmp)
+        new_q = reward + self.discount_factor * (self.deep_learning_factor \
+            * max(self.q_table[next_state]) + \
+                (1-self.deep_learning_factor)*n_n_score)
         self.q_table[state][action] += self.learning_rate * (new_q - current_q)
+        
+
 
     # 从Q-table中选取动作
     def get_action(self, state):
@@ -79,11 +94,12 @@ class QLearningAgent:
 
 
 if __name__ == "__main__":
+    f = open("output.txt","w")
     env = environment()
     agent = QLearningAgent(actions=list(range(env.n_actions)))
-    for i in range(100000):
+    for i in range(1):
         start = time.time()
-        for episode in range(5000):
+        for episode in range(1000):
             state = env.reset()
             while True:
                 # env.render()
@@ -91,7 +107,9 @@ if __name__ == "__main__":
                 action = agent.get_action(str(state))
                 next_state, reward, done, true_action = env.step(action)
                 # 更新Q表
-                agent.learn(str(state), true_action, reward, str(next_state))
+                n_next_state = env.check_get(next_state)
+                n_next_state.remove(state)
+                agent.learn(str(state), true_action, reward, str(next_state), n_next_state)
                 state = next_state
                 # print(state)
                 # env.print_value_all(agent.q_table)
@@ -100,6 +118,8 @@ if __name__ == "__main__":
                     break
         path = agent.get_path(agent)
         end = time.time()
-        print("time:", end - start)
-        print("learning_rate:%s; discount_factor:%s"%(agent.learning_rate,agent.discount_factor))
-        print(path)
+        str1 = "time:" + str(end-start)+ "\n"
+        f.write(str1)
+        str2 = "learning_rate:" + str(agent.learning_rate) + "discount_factor:" + str(agent.discount_factor) + "\n"
+        f.write(str2)
+        f.write(str(path) + "\n")
