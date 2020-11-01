@@ -24,11 +24,11 @@ class environment:
         self.now = copy.copy(self.start)
         return self.start
     
-
-    def step(self, action):
-        # 赋值赋的是引用
-        # 检测下一步位置是否合法
-        tp_now = copy.copy(self.now)
+    def check_next_step(self, action, t_now=1):
+        if(t_now == 1):
+            tp_now = copy.copy(self.now)
+        else:
+            tp_now = copy.copy(t_now)
         if action == 0:  # up
             if tp_now[0] > 0:
                 tp_now[0] -= 1
@@ -41,24 +41,31 @@ class environment:
         elif action == 3:  # right
             if tp_now[1] < self.COL - 1:
                 tp_now[1] += 1
-        # 位置不合法则再次选择方向
         if(tp_now == self.now):
             choice = copy.copy(self.action_space)
             try:
                 choice.remove(action)
             except:
                 self.i = self.i+1
-                print(self.i)
-            return self.step(random.choice(choice))
+                print("*"*20,self.i)
+            return self.check_next_step(random.choice(choice))
         else:
-            self.now = tp_now
-            next_state = self.now
-            reward = self.env_map[self.now[0]][self.now[1]]
-            if(self.now == self.end):
-                done = True
-            else:
-                done = False
-        return next_state, reward, done, action
+            return tp_now, action
+
+    def step(self, action):
+        # 赋值赋的是引用
+        # 检测下一步位置是否合法
+        next_state, action = self.check_next_step(action)
+        self.now = copy.copy(next_state)
+        n_next_state, n_action = self.check_next_step(action, t_now = next_state)
+
+        reward = self.env_map[self.now[0]][self.now[1]]
+        if(self.now == self.end):
+            done = True
+        else:
+            done = False
+        return n_next_state, next_state, reward, done, action#, n_action
+
     def check(self, state):
         if(state[0] < 0 or state[0] >= self.ROW):
             return False
@@ -75,8 +82,8 @@ class environment:
             if(self.check(new_state)):
                 n_n_state.append(new_state)
         return n_n_state
-
+    
 if __name__ == "__main__":
-    np = [5,6,7,8]
-    x = max(np.append(12))
-    print(x)
+    env = environment()
+    print(env.step(1))
+    print(env.now)

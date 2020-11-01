@@ -14,6 +14,7 @@ import time
 class QLearningAgent:
     def __init__(self, actions):
         # actions = [0, 1, 2, 3]
+        self.i = 0 #debug
         self.actions = actions
         self.learning_rate = (random.uniform(0, 1)+random.uniform(0, 1))/2
         self.discount_factor = (random.uniform(0, 1)+random.uniform(0, 1))/2
@@ -55,16 +56,20 @@ class QLearningAgent:
         # 贝尔曼方程更新
         # new_q = reward + self.discount_factor * max(self.q_table[next_state])
         # self.q_table[state][action] += self.learning_rate * (new_q - current_q)
-        # 改进新方法
-        n_n_score = -100
-        for index, n_n in enumerate(n_next_state):
-            tmp = copy.copy(self.q_table[str(n_n)])
-            tmp.append(n_n_score)
-            n_n_score = max(tmp)
+        # 改进新方法1对应：
+        # n_n_score = -100
+        # for index, n_n in enumerate(n_next_state):
+        #     tmp = copy.copy(self.q_table[str(n_n)])
+        #     tmp.append(n_n_score)
+        #     n_n_score = max(tmp)
+        # 改进方法2对应：
+        n_n_score =  max(self.q_table[str(n_next_state)])
+        # print(n_next_state)
         new_q = reward + self.discount_factor * (self.deep_learning_factor \
             * max(self.q_table[next_state]) + \
                 (1-self.deep_learning_factor)*n_n_score)
         self.q_table[state][action] += self.learning_rate * (new_q - current_q)
+        # 改进方法3对应：在n_next步的时候加入了方向的考虑
         
 
 
@@ -99,27 +104,41 @@ if __name__ == "__main__":
     agent = QLearningAgent(actions=list(range(env.n_actions)))
     for i in range(1):
         start = time.time()
-        for episode in range(1000):
+        i = 0
+        for episode in range(5000):
             state = env.reset()
             while True:
                 # env.render()
                 # agent产生动作
                 action = agent.get_action(str(state))
-                next_state, reward, done, true_action = env.step(action)
+                n_next_state, next_state, reward, done, true_action = env.step(action)
                 # 更新Q表
-                n_next_state = env.check_get(next_state)
-                n_next_state.remove(state)
+                # 一种下两步的确定方法（存在不收敛的情况）
+                # n_next_state = env.check_get(next_state)
+                # n_next_state.remove(state)
+                # 另一种下两步的确定方法:
+
                 agent.learn(str(state), true_action, reward, str(next_state), n_next_state)
                 state = next_state
                 # print(state)
                 # env.print_value_all(agent.q_table)
                 # 当到达终点就终止游戏开始新一轮训练
                 if done:
+                    i += 1
+                    # print(i)
                     break
+        print("It can work here!")
+
         path = agent.get_path(agent)
         end = time.time()
-        str1 = "time:" + str(end-start)+ "\n"
-        f.write(str1)
-        str2 = "learning_rate:" + str(agent.learning_rate) + "discount_factor:" + str(agent.discount_factor) + "\n"
-        f.write(str2)
-        f.write(str(path) + "\n")
+        print("time:", end-start)
+        print("now:", end)
+        print("time:", end - start)
+        print("learning_rate:%s; discount_factor:%s"%(agent.learning_rate,agent.discount_factor))
+        print(path)
+
+        # str1 = "time:" + str(end-start)+ "\n"
+        # f.write(str1)
+        # str2 = "learning_rate:" + str(agent.learning_rate) + "discount_factor:" + str(agent.discount_factor) + "\n"
+        # f.write(str2)
+        # f.write(str(path) + "\n")
