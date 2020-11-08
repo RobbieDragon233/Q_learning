@@ -16,13 +16,33 @@ class QLearningAgent:
         # actions = [0, 1, 2, 3]
         self.i = 0 #debug
         self.actions = actions
-        self.learning_rate = (random.uniform(0, 1)+random.uniform(0, 1))/2
-        self.discount_factor = (random.uniform(0, 1)+random.uniform(0, 1))/2
+        self.learning_rate = 0.8 #0.4 #0.6
+        self.discount_factor = 0.3 # (random.uniform(0, 1)+random.uniform(0, 1))/2 #0.38 #0.5
         self.epsilon = 0.1
-        self.deep_learning_factor = 0.8
+        self.deep_learning_factor = 0.9
         self.q_table = defaultdict(lambda: [0.0, 0.0, 0.0, 0.0])
+        # self.q_table = defaultdict(lambda: [-999.0, -999.0, -999.0, -999.0])
     
+
     def get_max_index(self, arr):
+        def second_max(lt):
+            d={}         #设定一个空字典
+            for i, v in enumerate(lt):#利用函数enumerate列出lt的每个元素下标i和元素v
+                d[v]=i   #把v作为字典的键，v对应的值是i
+            lt.sort(reverse=True)    #运用sort函数对lt元素排
+            y=lt[1]      #此时lt中第二小的下标是1，求出对应的元素就是字典对应的键
+            print(d[y])
+            return d[y]  #根据键找到对应值就是所找的下标
+        def my_max(arr):
+            # tmp_arr = sorted(arr, key=abs)
+            tmp_arr = sorted(arr)
+            return tmp_arr[0]
+        lt = copy.copy(arr)
+        try:
+            while(1):
+                del lt[lt.index(0)]
+        except:
+            pass
         return arr.index(max(arr))
 
     def get_path(self, agent):
@@ -63,7 +83,10 @@ class QLearningAgent:
         #     tmp.append(n_n_score)
         #     n_n_score = max(tmp)
         # 改进方法2对应：
-        n_n_score =  max(self.q_table[str(n_next_state)])
+        # print("state:",state)
+        # print("next_state:",next_state)
+        # print("n_next_state:",n_next_state)
+        n_n_score =  max(self.q_table[n_next_state])
         # print(n_next_state)
         new_q = reward + self.discount_factor * (self.deep_learning_factor \
             * max(self.q_table[next_state]) + \
@@ -74,7 +97,12 @@ class QLearningAgent:
 
 
     # 从Q-table中选取动作
-    def get_action(self, state):
+    def get_action(self, state, no_greedy = False):
+        if(no_greedy):
+            state_action = self.q_table[state]
+            action = self.arg_max(state_action)
+            return action
+        
         if np.random.rand() < self.epsilon:
             # 贪婪策略随机探索动作
             action = np.random.choice(self.actions)
@@ -99,26 +127,29 @@ class QLearningAgent:
 
 
 if __name__ == "__main__":
-    f = open("output.txt","w")
+    # f = open("output.txt","w")
     env = environment()
     agent = QLearningAgent(actions=list(range(env.n_actions)))
     for i in range(1):
         start = time.time()
         i = 0
-        for episode in range(5000):
+        for episode in range(500):
             state = env.reset()
             while True:
                 # env.render()
                 # agent产生动作
                 action = agent.get_action(str(state))
-                n_next_state, next_state, reward, done, true_action = env.step(action)
+                tp, next_state, reward, done, true_action = env.step(action)
+                
                 # 更新Q表
                 # 一种下两步的确定方法（存在不收敛的情况）
                 # n_next_state = env.check_get(next_state)
                 # n_next_state.remove(state)
                 # 另一种下两步的确定方法:
+                n_next_state = env.getFutureStep(agent.get_action(str(next_state), no_greedy = True))
+                
 
-                agent.learn(str(state), true_action, reward, str(next_state), n_next_state)
+                agent.learn(str(state), true_action, reward, str(next_state), str(n_next_state))
                 state = next_state
                 # print(state)
                 # env.print_value_all(agent.q_table)
@@ -128,7 +159,7 @@ if __name__ == "__main__":
                     # print(i)
                     break
         print("It can work here!")
-
+        # print(agent.q_table)
         path = agent.get_path(agent)
         end = time.time()
         print("time:", end-start)

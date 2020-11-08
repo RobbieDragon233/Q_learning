@@ -4,20 +4,21 @@ import copy
 class environment:
     def __init__(self):
         self.i = 0
-        self.env_map = [[0, -1, -1, 0, 0, 0], 
-        [0, -1, 0, 0, -1, 0], 
-        [0, -1, -1, 0, -1, 0], 
-        [0, 0, -1, 0, -1, 0], 
-        [-1, 0, -1, 0, -1, 0],
-        [-1, 0, 0, 0, -1, 0]]
+        self.env_map = [[0, -10, -10, 0, 0, 0], 
+        [0, -10, 0, 0, -10, 0], 
+        [0, -10, -10, 0, -10, 0], 
+        [0, 0, -10, 0, -10, 0], 
+        [-1, 0, -10, 0, -10, 0],
+        [-1, 0, 0, 0, -10, 0]]
         self.start = [0,0]
         self.end = [5,5]
         self.action_space = [0, 1, 2, 3] # ['u', 'd', 'l', 'r']
         
         self.ROW = len(self.env_map)
         self.COL = len(self.env_map[0])
-        self.env_map[self.end[0]][self.end[1]] = 5
+        self.env_map[self.end[0]][self.end[1]] = 1
         self.now = self.start
+        self.next = self.start
         self.n_actions = len(self.action_space)
 
     def reset(self):
@@ -66,6 +67,12 @@ class environment:
             done = False
         return n_next_state, next_state, reward, done, action#, n_action
 
+    def getFutureStep(self, action):
+        next_state, action = self.check_next_step(action)
+        # # the formula seems didn't need reward
+        # reward = self.env_map[self.now[0]][self.now[1]]
+        return next_state
+
     def check(self, state):
         if(state[0] < 0 or state[0] >= self.ROW):
             return False
@@ -83,7 +90,21 @@ class environment:
                 n_n_state.append(new_state)
         return n_n_state
     
+
+def seconde_min(lt):
+    d={}         #设定一个空字典
+    for i, v in enumerate(lt):#利用函数enumerate列出lt的每个元素下标i和元素v
+        d[v]=i   #把v作为字典的键，v对应的值是i
+    lt.sort(reverse=True)    #运用sort函数对lt元素排
+    y=lt[1]      #此时lt中第二小的下标是1，求出对应的元素就是字典对应的键
+    return d[y]  #根据键找到对应值就是所找的下标
+
+
 if __name__ == "__main__":
-    env = environment()
-    print(env.step(1))
-    print(env.now)
+    lt = [0, 0]
+    try:
+        while(1):
+            del lt[lt.index(0)]
+    except:
+        pass
+    print(len(lt))
